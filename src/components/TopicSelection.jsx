@@ -1,32 +1,46 @@
+import React from "react"
+import {
+	FormControl,
+	FormLabel,
+	FormGroup,
+	FormControlLabel,
+	Checkbox,
+	Box,
+} from "@mui/material"
+
 const TopicSelection = ({ topics, selectedTopics, onTopicChange }) => {
 	const handleCheckboxChange = (topic) => {
 		onTopicChange(topic) // Pass the full topic object back to the parent
 	}
 
 	return (
-		<div className='mb-4'>
-			<label className='block text-gray-700'>Topics</label>
-			<div className='flex flex-wrap'>
-				{topics.map((topic) => (
-					<div
-						key={topic.TopicID}
-						className='mr-4'>
-						<input
+		<Box mb={4}>
+			<FormControl
+				component='fieldset'
+				fullWidth>
+				<FormLabel
+					component='legend'
+					className='block text-gray-700'>
+					Topics
+				</FormLabel>
+				<FormGroup row>
+					{topics.map((topic) => (
+						<FormControlLabel
 							key={topic.TopicID}
-							type='checkbox'
-							value={topic.TopicID}
-							checked={selectedTopics.some(
-								(selected) => selected.TopicID === topic.TopicID,
-							)}
-							onChange={() => handleCheckboxChange(topic)}
-							className='mr-2'
-							id={topic.TopicID}
+							control={
+								<Checkbox
+									checked={selectedTopics.some(
+										(selected) => selected.TopicID === topic.TopicID,
+									)}
+									onChange={() => handleCheckboxChange(topic)}
+								/>
+							}
+							label={topic.TopicName}
 						/>
-						<label htmlFor={topic.TopicID}>{topic.TopicName}</label>
-					</div>
-				))}
-			</div>
-		</div>
+					))}
+				</FormGroup>
+			</FormControl>
+		</Box>
 	)
 }
 

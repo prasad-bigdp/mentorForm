@@ -4,7 +4,7 @@ import ModuleSelection from "./ModuleSelection"
 import TopicSelection from "./TopicSelection"
 import MarksInput from "./MarksInput"
 import SubmitButton from "./SubmitButton"
-import StudentSelectionModal from "./Modal" // Import modal for specific student selection
+import StudentSelectionModal from "./Modal"
 import * as XLSX from "xlsx" // Import xlsx library
 import axios from "axios"
 import {
@@ -26,6 +26,7 @@ import {
 	TableCell,
 	TableBody,
 	TextField,
+	Pagination,
 } from "@mui/material"
 import { IconButton } from "@mui/material"
 
@@ -54,8 +55,11 @@ const MentorForm = () => {
 	const [students, setStudents] = useState([]) // Store all students from batch
 	const [selectedStudents, setSelectedStudents] = useState([]) // Store selected students
 	const [showModal, setShowModal] = useState(false) // Modal visibility for specific students
+	const [validatedExcel, setValidatedExcel] = useState(false) // New state to track Excel validation
+	// Pagination state for manual entry
+	const [currentPage, setCurrentPage] = useState(1)
+	const rowsPerPage = 10
 
-	// Fetch batches and modules when the component loads
 	useEffect(() => {
 		const fetchBatchesAndModules = async () => {
 			try {
@@ -158,7 +162,7 @@ const MentorForm = () => {
 		setShowModal(false) // Close modal after saving selected students
 	}
 
-	// Handle file upload (Excel file)
+	// Excel file upload handling and validation
 	const handleFileUpload = (event) => {
 		const file = event.target.files[0]
 		const reader = new FileReader()
@@ -168,7 +172,17 @@ const MentorForm = () => {
 			const sheetName = workbook.SheetNames[0]
 			const sheet = workbook.Sheets[sheetName]
 			const parsedData = XLSX.utils.sheet_to_json(sheet)
-			console.log("Parsed Excel data:", parsedData) // Process Excel data
+			console.log("Parsed Excel data:", parsedData)
+
+			// Validate the structure of the uploaded Excel
+			const isValid = validateUploadedExcel(parsedData)
+			if (isValid) {
+				setValidatedExcel(true) // Set state to true if valid
+				alert("Excel format is valid!")
+			} else {
+				setValidatedExcel(false) // Set state to false if invalid
+				alert("Invalid Excel format. Please upload a valid Excel file.")
+			}
 		}
 		reader.readAsArrayBuffer(file)
 	}
@@ -203,33 +217,6 @@ const MentorForm = () => {
 		setTotal(totalMarks) // Update total marks
 	}
 
-	// Download sample Excel with selected students and topics
-	const handleDownloadSample = () => {
-		const headers = [
-			"Roll No",
-			"Student Name",
-			...selectedTopics.map(
-				(topic) =>
-					`${topic.TopicName} (Max: ${maxMarks[topic.TopicID] || "N/A"})`,
-			),
-		]
-
-		const data = [
-			headers, // Add header row
-			...selectedStudents.map((student) => [
-				student.StudentID,
-				student.FirstName,
-				...selectedTopics.map(() => ""), // Leave marks empty
-			]),
-		]
-
-		const ws = XLSX.utils.aoa_to_sheet(data)
-		const wb = XLSX.utils.book_new()
-		XLSX.utils.book_append_sheet(wb, ws, "Sample")
-
-		XLSX.writeFile(wb, "sample_excel.xlsx")
-	}
-
 	// Handle adding a new row for manual marks entry
 	const handleAddRow = () => {
 		setManualMarks([...manualMarks, { rollNo: "", name: "", marks: {} }])
@@ -248,6 +235,103 @@ const MentorForm = () => {
 		setManualMarks(updatedRows)
 	}
 
+	// Handle page change for manual entry pagination
+	const handlePageChange = (event, page) => {
+		setCurrentPage(page)
+	}
+    const handleDownloadSample = () => {
+			const headers = [
+				"Roll No",
+				"Student Name",
+				...selectedTopics.map(
+					(topic) =>
+						`${topic.TopicName} (Max: ${maxMarks[topic.TopicID] || "N/A"})`,
+				),
+			]
+
+			const data = [
+				headers, // Add header row
+				...selectedStudents.map((student) => [
+					student.StudentID,
+					student.FirstName,
+					...selectedTopics.map(() => ""), // Leave marks empty
+				]),
+			]
+
+			const ws = XLSX.utils.aoa_to_sheet(data)
+			const wb = XLSX.utils.book_new()
+			XLSX.utils.book_append_sheet(wb, ws, "Sample")
+
+			XLSX.writeFile(wb, "sample_excel.xlsx")
+		}
+const validateExcelFile = () => {
+	if (!validatedExcel) {
+		alert(
+			"No Excel file uploaded or invalid format. Please upload a valid Excel.",
+		)
+		return
+	}
+
+	alert("Excel format validated successfully!")
+}
+
+	// Get current rows for the table based on pagination
+	const indexOfLastRow = currentPage * rowsPerPage
+	const indexOfFirstRow = indexOfLastRow - rowsPerPage
+	const currentRows = manualMarks.slice(indexOfFirstRow, indexOfLastRow)
+
+	// Submission logic
+	const handleSubmit = () => {
+		if (uploadOption === "upload") {
+			// Ensure a valid Excel has been uploaded
+			if (!validatedExcel) {
+				alert("Please upload a valid Excel file before submitting.")
+				return
+			}
+			// Process the Excel data for submission
+			submitExcelData()
+		} else if (uploadOption === "enter") {
+			// Ensure manual marks have been filled out
+			if (manualMarks.length === 0 || !areManualMarksValid()) {
+				alert("Please fill out the marks table correctly before submitting.")
+				return
+			}
+			// Process the manual marks for submission
+			submitManualMarks()
+		}
+		alert("Form submitted successfully!")
+	}
+
+	// Validation function for uploaded Excel
+	const validateUploadedExcel = (parsedData) => {
+		const expectedHeaders = [
+			"Roll No",
+			"Student Name",
+			...selectedTopics.map(
+				(topic) =>
+					`${topic.TopicName} (Max: ${maxMarks[topic.TopicID] || "N/A"})`,
+			),
+		]
+		const uploadedHeaders = Object.keys(parsedData[0])
+
+		const isValid = expectedHeaders.every((header, index) => {
+			return header === uploadedHeaders[index]
+		})
+
+		return isValid
+	}
+
+	// Manual Marks Validation
+	const areManualMarksValid = () => {
+		return manualMarks.every((row) => {
+			return (
+				row.rollNo &&
+				row.name &&
+				Object.values(row.marks).every((mark) => mark !== "")
+			)
+		})
+	}
+
 	return (
 		<>
 			{/* Header with Logo, Name and Logout */}
@@ -257,11 +341,10 @@ const MentorForm = () => {
 						variant='h6'
 						sx={{ flexGrow: 1 }}>
 						<img
-							src='/path/to/logo.png'
+							src='../../public/nit-logo.jpg'
 							alt='Logo'
 							style={{ height: "40px", marginRight: "10px" }}
 						/>
-						Mentor Form
 					</Typography>
 					<Button
 						color='inherit'
@@ -298,8 +381,8 @@ const MentorForm = () => {
 							xs={12}>
 							<BatchSelection
 								batches={batches}
-								selectedBatch={selectedBatchId} // Pass the selected batch ID
-								onBatchChange={handleBatchChange} // Capture selected batch ID and update state
+								selectedBatch={selectedBatchId}
+								onBatchChange={handleBatchChange}
 							/>
 						</Grid>
 
@@ -418,16 +501,32 @@ const MentorForm = () => {
 							<Grid
 								item
 								xs={12}>
+								{/* Download Sample Excel */}
 								<Button
 									variant='contained'
-									onClick={handleDownloadSample}
-									color='primary'>
+									onClick={handleDownloadSample} // Call download sample Excel function
+									color='primary'
+									sx={{ marginBottom: 2 }}>
 									Download Sample Excel
+								</Button>
+
+								{/* Upload Excel File */}
+								<input
+									type='file'
+									accept='.xlsx'
+									onChange={handleFileUpload}
+									style={{ display: "block", margin: "10px 0" }}
+								/>
+								<Button
+									variant='contained'
+									onClick={validateExcelFile} // Call your validation function here
+									color='primary'>
+									Validate Excel
 								</Button>
 							</Grid>
 						)}
 
-						{/* Manual Entry Table */}
+						{/* Manual Entry Table with Pagination */}
 						{uploadOption === "enter" && (
 							<Grid
 								item
@@ -446,7 +545,7 @@ const MentorForm = () => {
 										</TableRow>
 									</TableHead>
 									<TableBody>
-										{manualMarks.map((row, index) => (
+										{currentRows.map((row, index) => (
 											<TableRow key={index}>
 												<TableCell>
 													<TextField
@@ -454,7 +553,7 @@ const MentorForm = () => {
 														value={row.rollNo}
 														onChange={(e) =>
 															handleManualMarksChange(
-																index,
+																indexOfFirstRow + index,
 																"rollNo",
 																e.target.value,
 															)
@@ -467,7 +566,7 @@ const MentorForm = () => {
 														value={row.name}
 														onChange={(e) =>
 															handleManualMarksChange(
-																index,
+																indexOfFirstRow + index,
 																"name",
 																e.target.value,
 															)
@@ -481,9 +580,11 @@ const MentorForm = () => {
 															fullWidth
 															value={row.marks[topic.TopicID] || ""}
 															onChange={(e) =>
-																handleManualMarksChange(index, "marks", {
-																	[topic.TopicID]: e.target.value,
-																})
+																handleManualMarksChange(
+																	indexOfFirstRow + index,
+																	"marks",
+																	{ [topic.TopicID]: e.target.value },
+																)
 															}
 														/>
 													</TableCell>
@@ -492,11 +593,15 @@ const MentorForm = () => {
 										))}
 									</TableBody>
 								</Table>
-								<IconButton
-									onClick={handleAddRow}
-									color='primary'>
-									<AddIcon />
-								</IconButton>
+								{/* Pagination for Manual Marks Entry */}
+								<Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+									<Pagination
+										count={Math.ceil(manualMarks.length / rowsPerPage)}
+										page={currentPage}
+										onChange={handlePageChange}
+										color='primary'
+									/>
+								</Box>
 							</Grid>
 						)}
 
@@ -508,6 +613,10 @@ const MentorForm = () => {
 								selectedModule={selectedModule}
 								selectedTopics={selectedTopics}
 								marks={marks}
+								uploadOption={uploadOption}
+								validatedExcel={validatedExcel}
+								manualMarks={manualMarks}
+								areManualMarksValid={areManualMarksValid}
 							/>
 						</Grid>
 					</Grid>
@@ -517,10 +626,10 @@ const MentorForm = () => {
 			{/* Modal for selecting specific students */}
 			{showModal && (
 				<StudentSelectionModal
-					students={students} // Pass all students from the batch
-					selectedStudents={selectedStudents} // Currently selected students
-					onSave={handleSaveSelectedStudents} // Handle saving
-					onClose={() => setShowModal(false)} // Close the modal
+					students={students}
+					selectedStudents={selectedStudents}
+					onSave={handleSaveSelectedStudents}
+					onClose={() => setShowModal(false)}
 				/>
 			)}
 		</>

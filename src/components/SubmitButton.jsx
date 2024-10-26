@@ -1,7 +1,27 @@
 import axios from "axios"
 
-const SubmitButton = ({ selectedModule, selectedTopics, marks }) => {
+const SubmitButton = ({
+	selectedModule,
+	selectedTopics,
+	marks,
+	uploadOption,
+	validatedExcel,
+	manualMarks,
+	areManualMarksValid,
+}) => {
 	const handleSubmit = async () => {
+		// Excel or Manual validation check
+		if (uploadOption === "upload" && !validatedExcel) {
+			alert("Please upload a valid Excel file.")
+			return
+		}
+
+		if (uploadOption === "enter" && !areManualMarksValid()) {
+			alert("Please fill in all required fields in the manual table.")
+			return
+		}
+
+		// Prepare form data for submission
 		const formData = {
 			selectedModule,
 			selectedTopics,

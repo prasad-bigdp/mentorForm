@@ -1,25 +1,40 @@
+import React from "react"
+import {
+	FormControl,
+	FormLabel,
+	RadioGroup,
+	FormControlLabel,
+	Radio,
+	Box,
+} from "@mui/material"
+
 const ModuleSelection = ({ modules, onModuleChange }) => {
 	return (
-		<div className='mb-4'>
-			<label className='block text-gray-700'>Module</label>
-			<div className='flex'>
-				{modules.map((mod) => (
-					<div
-						key={mod.ModuleID}
-						className='mr-4'>
-						<input
-							type='radio'
-							name='module'
+		<Box mb={4}>
+			<FormControl
+				component='fieldset'
+				fullWidth>
+				<FormLabel
+					component='legend'
+					className='block text-gray-700'>
+					Module
+				</FormLabel>
+				<RadioGroup
+					row
+					aria-label='module'
+					name='module'>
+					{modules.map((mod) => (
+						<FormControlLabel
+							key={mod.ModuleID}
 							value={mod.ModuleID}
+							control={<Radio />}
+							label={mod.ModuleName}
 							onChange={() => onModuleChange(mod.ModuleID)}
-							className='mr-2'
-							id={mod.ModuleID}
 						/>
-						<label htmlFor={mod.ModuleID}>{mod.ModuleName}</label>
-					</div>
-				))}
-			</div>
-		</div>
+					))}
+				</RadioGroup>
+			</FormControl>
+		</Box>
 	)
 }
 

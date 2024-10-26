@@ -5,7 +5,7 @@ import TopicSelection from "./TopicSelection"
 import MarksInput from "./MarksInput"
 import SubmitButton from "./SubmitButton"
 import StudentSelectionModal from "./Modal"
-import * as XLSX from "xlsx" // Import xlsx library
+import * as XLSX from "xlsx"
 import axios from "axios"
 import {
 	AppBar,
@@ -28,35 +28,35 @@ import {
 	TextField,
 	Pagination,
 } from "@mui/material"
-import { IconButton } from "@mui/material"
-
 import LogoutIcon from "@mui/icons-material/Logout"
 import AddIcon from "@mui/icons-material/Add"
-
-// Import these from @mui/x-date-pickers
 import { DatePicker } from "@mui/x-date-pickers"
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider"
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs" // Adapter for Day.js
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs"
 
 const MentorForm = () => {
 	const [batches, setBatches] = useState([])
-	const [selectedBatchId, setSelectedBatchId] = useState("") // Ensure it's initialized correctly
+	const [selectedBatchId, setSelectedBatchId] = useState("")
 	const [modules, setModules] = useState([])
 	const [selectedModule, setSelectedModule] = useState("")
 	const [topics, setTopics] = useState([])
 	const [selectedTopics, setSelectedTopics] = useState([])
 	const [marks, setMarks] = useState({})
-	const [maxMarks, setMaxMarks] = useState({}) // Max marks for each topic
-	const [total, setTotal] = useState(0) // Total marks state
-	const [uploadOption, setUploadOption] = useState("") // Upload or enter marks
+	const [maxMarks, setMaxMarks] = useState({})
+	const [total, setTotal] = useState(0)
+	const [uploadOption, setUploadOption] = useState("")
+	const [adminId, setAdminId] = useState(7)
+	const [mentorId, setMentorId] = useState(1017)
+	const [manualReferenceId, setManualReferenceId] = useState("REF166")
+	const [dateOfAssessment, setDateOfAssessment] = useState(null)
+	const [typeOfAssessment, setTypeOfAssessment] = useState("MCQ")
 	const [announcementDate, setAnnouncementDate] = useState(null)
-	const [manualMarks, setManualMarks] = useState([]) // For manual entry
-	const [studentSelectionType, setStudentSelectionType] = useState("") // "Specific Students" or "Complete Batch"
-	const [students, setStudents] = useState([]) // Store all students from batch
-	const [selectedStudents, setSelectedStudents] = useState([]) // Store selected students
-	const [showModal, setShowModal] = useState(false) // Modal visibility for specific students
-	const [validatedExcel, setValidatedExcel] = useState(false) // New state to track Excel validation
-	// Pagination state for manual entry
+	const [manualMarks, setManualMarks] = useState([])
+	const [studentSelectionType, setStudentSelectionType] = useState("")
+	const [students, setStudents] = useState([])
+	const [selectedStudents, setSelectedStudents] = useState([])
+	const [showModal, setShowModal] = useState(false)
+	const [validatedExcel, setValidatedExcel] = useState(false)
 	const [currentPage, setCurrentPage] = useState(1)
 	const rowsPerPage = 10
 
@@ -80,7 +80,6 @@ const MentorForm = () => {
 		fetchBatchesAndModules()
 	}, [])
 
-	// Fetch topics when a module is selected
 	const handleModuleChange = async (moduleId) => {
 		setSelectedModule(moduleId)
 		try {
@@ -93,7 +92,6 @@ const MentorForm = () => {
 		}
 	}
 
-	// Handle topic selection (store full topic object)
 	const handleTopicChange = (selectedTopic) => {
 		const isAlreadySelected = selectedTopics.find(
 			(topic) => topic.TopicID === selectedTopic.TopicID,
@@ -110,59 +108,51 @@ const MentorForm = () => {
 		}
 	}
 
-	// Handle batch selection
 	const handleBatchChange = (batchId) => {
-		setSelectedBatchId(batchId) // Update state with the selected batch ID
+		setSelectedBatchId(batchId)
 	}
 
-	// Fetch students for complete batch selection
 	const fetchStudentsByBatch = async (batchId) => {
 		try {
 			const studentsResponse = await axios.get(
 				`http://49.207.10.13:4017/api/fetchstudentsByBatchId?batchId=${batchId}`,
 			)
-			setStudents(studentsResponse.data) // Store students fetched from the batch
-			setSelectedStudents(studentsResponse.data) // Preselect all students if complete batch is selected
+			setStudents(studentsResponse.data)
+			setSelectedStudents(studentsResponse.data)
 
-			// Pre-fill manualMarks with the fetched students' roll numbers and names
 			const preFilledManualMarks = studentsResponse.data.map((student) => ({
 				rollNo: student.StudentID,
 				name: student.FirstName,
-				marks: {}, // Initialize marks as an empty object
+				marks: {},
 			}))
-			setManualMarks(preFilledManualMarks) // Set manualMarks with the pre-filled data
+			setManualMarks(preFilledManualMarks)
 		} catch (error) {
 			console.error("Error fetching students:", error)
 		}
 	}
 
-	// Handle student selection type (Complete Batch or Specific Students)
 	const handleStudentSelection = (type) => {
 		setStudentSelectionType(type)
 
 		if (type === "Complete Batch" && selectedBatchId) {
-			// Fetch students based on selected batch
 			fetchStudentsByBatch(selectedBatchId)
 		} else if (type === "Specific Students") {
-			// Show modal for specific student selection
 			setShowModal(true)
 		}
 	}
 
-	// Handle saving selected students from modal
 	const handleSaveSelectedStudents = (selectedStudentList) => {
-		setSelectedStudents(selectedStudentList) // Save only the selected students
+		setSelectedStudents(selectedStudentList)
 		setManualMarks(
 			selectedStudentList.map((student) => ({
 				rollNo: student.StudentID,
 				name: student.FirstName,
-				marks: {}, // Initialize marks for manual entry
+				marks: {},
 			})),
 		)
-		setShowModal(false) // Close modal after saving selected students
+		setShowModal(false)
 	}
 
-	// Excel file upload handling and validation
 	const handleFileUpload = (event) => {
 		const file = event.target.files[0]
 		const reader = new FileReader()
@@ -174,55 +164,70 @@ const MentorForm = () => {
 			const parsedData = XLSX.utils.sheet_to_json(sheet)
 			console.log("Parsed Excel data:", parsedData)
 
-			// Validate the structure of the uploaded Excel
 			const isValid = validateUploadedExcel(parsedData)
 			if (isValid) {
-				setValidatedExcel(true) // Set state to true if valid
+				setValidatedExcel(true)
 				alert("Excel format is valid!")
 			} else {
-				setValidatedExcel(false) // Set state to false if invalid
+				setValidatedExcel(false)
 				alert("Invalid Excel format. Please upload a valid Excel file.")
 			}
 		}
 		reader.readAsArrayBuffer(file)
 	}
 
-	// Handle Excel download for students
-	const handleDownloadExcel = () => {
-		const headers = ["Roll No", "Student Name"]
+	const handleDownloadSample = () => {
+		const headers = [
+			"Roll No",
+			"Student Name",
+			...selectedTopics.map(
+				(topic) =>
+					`${topic.TopicName} (Max: ${maxMarks[topic.TopicID] || "N/A"})`,
+			),
+		]
+
 		const data = [
 			headers,
 			...selectedStudents.map((student) => [
 				student.StudentID,
 				student.FirstName,
+				...selectedTopics.map(() => ""),
 			]),
 		]
 
 		const ws = XLSX.utils.aoa_to_sheet(data)
 		const wb = XLSX.utils.book_new()
-		XLSX.utils.book_append_sheet(wb, ws, "Students")
-		XLSX.writeFile(wb, "students_list.xlsx")
+		XLSX.utils.book_append_sheet(wb, ws, "Sample")
+
+		XLSX.writeFile(wb, "sample_excel.xlsx")
 	}
 
-	// Handle marks input and update total dynamically
+	const validateExcelFile = () => {
+		if (!validatedExcel) {
+			alert(
+				"No Excel file uploaded or invalid format. Please upload a valid Excel.",
+			)
+			return
+		}
+
+		alert("Excel format validated successfully!")
+	}
+
 	const handleMarksChange = (topicId, value) => {
 		const updatedMarks = { ...marks, [topicId]: Number(value) }
 		setMarks(updatedMarks)
 
-		// Calculate total
 		const totalMarks = Object.values(updatedMarks).reduce(
-			(sum, mark) => sum + (isNaN(mark) ? 0 : mark), // Make sure to ignore NaN values
+			(sum, mark) => sum + (isNaN(mark) ? 0 : mark),
 			0,
 		)
-		setTotal(totalMarks) // Update total marks
+		setTotal(totalMarks)
 	}
 
-	// Handle adding a new row for manual marks entry
 	const handleAddRow = () => {
 		setManualMarks([...manualMarks, { rollNo: "", name: "", marks: {} }])
 	}
 
-	// Handle updating marks in the manual table
 	const handleManualMarksChange = (index, field, value) => {
 		const updatedRows = manualMarks.map((row, idx) =>
 			idx === index
@@ -235,74 +240,31 @@ const MentorForm = () => {
 		setManualMarks(updatedRows)
 	}
 
-	// Handle page change for manual entry pagination
 	const handlePageChange = (event, page) => {
 		setCurrentPage(page)
 	}
-    const handleDownloadSample = () => {
-			const headers = [
-				"Roll No",
-				"Student Name",
-				...selectedTopics.map(
-					(topic) =>
-						`${topic.TopicName} (Max: ${maxMarks[topic.TopicID] || "N/A"})`,
-				),
-			]
 
-			const data = [
-				headers, // Add header row
-				...selectedStudents.map((student) => [
-					student.StudentID,
-					student.FirstName,
-					...selectedTopics.map(() => ""), // Leave marks empty
-				]),
-			]
-
-			const ws = XLSX.utils.aoa_to_sheet(data)
-			const wb = XLSX.utils.book_new()
-			XLSX.utils.book_append_sheet(wb, ws, "Sample")
-
-			XLSX.writeFile(wb, "sample_excel.xlsx")
-		}
-const validateExcelFile = () => {
-	if (!validatedExcel) {
-		alert(
-			"No Excel file uploaded or invalid format. Please upload a valid Excel.",
-		)
-		return
-	}
-
-	alert("Excel format validated successfully!")
-}
-
-	// Get current rows for the table based on pagination
 	const indexOfLastRow = currentPage * rowsPerPage
 	const indexOfFirstRow = indexOfLastRow - rowsPerPage
 	const currentRows = manualMarks.slice(indexOfFirstRow, indexOfLastRow)
 
-	// Submission logic
 	const handleSubmit = () => {
 		if (uploadOption === "upload") {
-			// Ensure a valid Excel has been uploaded
 			if (!validatedExcel) {
 				alert("Please upload a valid Excel file before submitting.")
 				return
 			}
-			// Process the Excel data for submission
 			submitExcelData()
 		} else if (uploadOption === "enter") {
-			// Ensure manual marks have been filled out
 			if (manualMarks.length === 0 || !areManualMarksValid()) {
 				alert("Please fill out the marks table correctly before submitting.")
 				return
 			}
-			// Process the manual marks for submission
 			submitManualMarks()
 		}
 		alert("Form submitted successfully!")
 	}
 
-	// Validation function for uploaded Excel
 	const validateUploadedExcel = (parsedData) => {
 		const expectedHeaders = [
 			"Roll No",
@@ -321,7 +283,6 @@ const validateExcelFile = () => {
 		return isValid
 	}
 
-	// Manual Marks Validation
 	const areManualMarksValid = () => {
 		return manualMarks.every((row) => {
 			return (
@@ -334,7 +295,6 @@ const validateExcelFile = () => {
 
 	return (
 		<>
-			{/* Header with Logo, Name and Logout */}
 			<AppBar position='static'>
 				<Toolbar>
 					<Typography
@@ -354,7 +314,6 @@ const validateExcelFile = () => {
 				</Toolbar>
 			</AppBar>
 
-			{/* Centering the Form */}
 			<Box
 				sx={{
 					display: "flex",
@@ -375,7 +334,6 @@ const validateExcelFile = () => {
 					<Grid
 						container
 						spacing={4}>
-						{/* Batch Selection */}
 						<Grid
 							item
 							xs={12}>
@@ -386,7 +344,6 @@ const validateExcelFile = () => {
 							/>
 						</Grid>
 
-						{/* Student Selection */}
 						<Grid
 							item
 							xs={12}>
@@ -411,7 +368,6 @@ const validateExcelFile = () => {
 							</FormControl>
 						</Grid>
 
-						{/* Date of Announcement with LocalizationProvider */}
 						<Grid
 							item
 							xs={12}>
@@ -430,7 +386,40 @@ const validateExcelFile = () => {
 							</LocalizationProvider>
 						</Grid>
 
-						{/* Module Selection */}
+						<Grid
+							item
+							xs={12}>
+							<FormControl component='fieldset'>
+								<FormLabel component='legend'>Type of Assessment</FormLabel>
+								<RadioGroup
+									row
+									name='TypeOfAssessment'
+									value={typeOfAssessment}
+									onChange={(e) => setTypeOfAssessment(e.target.value)}>
+									<FormControlLabel
+										value='MCQ'
+										control={<Radio />}
+										label='MCQ'
+									/>
+									<FormControlLabel
+										value='Description Test'
+										control={<Radio />}
+										label='Description Test'
+									/>
+									<FormControlLabel
+										value='Coding Test'
+										control={<Radio />}
+										label='Coding Test'
+									/>
+									<FormControlLabel
+										value='Lab Test'
+										control={<Radio />}
+										label='Lab Test'
+									/>
+								</RadioGroup>
+							</FormControl>
+						</Grid>
+
 						<Grid
 							item
 							xs={12}>
@@ -440,7 +429,6 @@ const validateExcelFile = () => {
 							/>
 						</Grid>
 
-						{/* Topic Selection */}
 						<Grid
 							item
 							xs={12}>
@@ -451,7 +439,6 @@ const validateExcelFile = () => {
 							/>
 						</Grid>
 
-						{/* Marks Input */}
 						<Grid
 							item
 							xs={12}>
@@ -464,14 +451,12 @@ const validateExcelFile = () => {
 							/>
 						</Grid>
 
-						{/* Total Marks Display */}
 						<Grid
 							item
 							xs={12}>
 							<Typography variant='h6'>Total Marks: {total}</Typography>
 						</Grid>
 
-						{/* Upload or Enter Marks */}
 						<Grid
 							item
 							xs={12}>
@@ -496,37 +481,34 @@ const validateExcelFile = () => {
 							</FormControl>
 						</Grid>
 
-						{/* Upload Section */}
 						{uploadOption === "upload" && (
 							<Grid
 								item
 								xs={12}>
-								{/* Download Sample Excel */}
 								<Button
 									variant='contained'
-									onClick={handleDownloadSample} // Call download sample Excel function
+									onClick={handleDownloadSample}
 									color='primary'
 									sx={{ marginBottom: 2 }}>
 									Download Sample Excel
 								</Button>
 
-								{/* Upload Excel File */}
 								<input
 									type='file'
 									accept='.xlsx'
 									onChange={handleFileUpload}
 									style={{ display: "block", margin: "10px 0" }}
 								/>
+
 								<Button
 									variant='contained'
-									onClick={validateExcelFile} // Call your validation function here
+									onClick={validateExcelFile}
 									color='primary'>
 									Validate Excel
 								</Button>
 							</Grid>
 						)}
 
-						{/* Manual Entry Table with Pagination */}
 						{uploadOption === "enter" && (
 							<Grid
 								item
@@ -593,7 +575,6 @@ const validateExcelFile = () => {
 										))}
 									</TableBody>
 								</Table>
-								{/* Pagination for Manual Marks Entry */}
 								<Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
 									<Pagination
 										count={Math.ceil(manualMarks.length / rowsPerPage)}
@@ -605,7 +586,6 @@ const validateExcelFile = () => {
 							</Grid>
 						)}
 
-						{/* Submit Button */}
 						<Grid
 							item
 							xs={12}>
@@ -623,7 +603,6 @@ const validateExcelFile = () => {
 				</Container>
 			</Box>
 
-			{/* Modal for selecting specific students */}
 			{showModal && (
 				<StudentSelectionModal
 					students={students}
@@ -632,6 +611,7 @@ const validateExcelFile = () => {
 					onClose={() => setShowModal(false)}
 				/>
 			)}
+			{/* End of form */}
 		</>
 	)
 }

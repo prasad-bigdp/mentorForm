@@ -38,6 +38,11 @@ const StudentSelectionModal = ({
 		)
 	}
 
+	// Handle unselect all
+	const handleUnselectAll = () => {
+		setSelected([]) // Clear all selections
+	}
+
 	// Handle saving selected students
 	const handleSave = () => {
 		const selectedStudentList = students.filter((student) =>
@@ -105,6 +110,15 @@ const StudentSelectionModal = ({
 					sx={{ mb: 2 }}
 				/>
 
+				{/* Unselect All Button */}
+				<Button
+					variant='outlined'
+					color='secondary'
+					onClick={handleUnselectAll}
+					sx={{ mb: 2, width: '100%' }}>
+					Unselect All
+				</Button>
+
 				{/* Student List with Checkboxes */}
 				<FormGroup>
 					{currentStudents.map((student) => (
@@ -116,7 +130,8 @@ const StudentSelectionModal = ({
 									onChange={() => handleCheckboxChange(student.StudentID)}
 								/>
 							}
-							label={student.StudentID}
+							label={student.FirstName}
+							
 						/>
 					))}
 				</FormGroup>

@@ -10,12 +10,13 @@ const SubmitButton = ({
 }) => {
 	const handleSubmit = async () => {
 		const formData = {
-			AdminId: 7, // Static admin ID
-			ManualReferenceId: "REF166", // Static reference ID
-			MentorId: 1017, // Static mentor ID
-			BatchId: selectedModule, // Assuming this is the batch ID
+			AdminId: 9, // Static admin ID
+			ManualReferenceId: "REF16fhthyhy6", // Static reference ID
+			MentorId: 10176767, // Static mentor ID
+			BatchId: selectedBatchId, // Assuming this is the batch ID
 			DateOfAssessment: new Date().toISOString().split("T")[0], // Replace this with actual date picker value
 			TypeOfAssessment: "MCQ", // Replace with actual assessment type if needed
+			ModuleId:selectedModule,
 			students: [],
 		}
 

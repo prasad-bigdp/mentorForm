@@ -593,6 +593,7 @@ const MentorForm = () => {
 								selectedModule={selectedModule}
 								selectedTopics={selectedTopics}
 								marks={marks}
+								maxMarks={maxMarks}
 								BatchId={selectedBatchId}
 								uploadOption={uploadOption}
 								validatedExcel={validatedExcel}

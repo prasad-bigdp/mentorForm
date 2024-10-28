@@ -4,6 +4,7 @@ const SubmitButton = ({
 	selectedModule,
 	selectedTopics,
 	marks,
+	maxMarks,
 	uploadOption,
 	validatedExcel,
 	manualMarks,
@@ -29,14 +30,15 @@ const SubmitButton = ({
 			}
 			// Process uploaded Excel data (this part should already be handled elsewhere)
 		} else if (uploadOption === "enter") {
+			console.log(marks)
 			// Handle manual entry of marks
 			manualMarks.forEach((student) => {
 				const studentData = {
 					StudentId: student.rollNo,
 					topics: selectedTopics.map((topic) => ({
 						TopicId: topic.TopicID, // Ensure TopicID is available here
-						MaximumMarks: topic.MaxMarks || 100, // Replace with actual max marks if available
-						ObtainMarks: marks[topic.TopicID] || 0, // Fetch obtained marks
+						MaximumMarks: maxMarks[topic.TopicID], // Replace with actual max marks if available
+						ObtainMarks: student.marks[topic.TopicID] || 0, // Fetch obtained marks
 					})),
 				}
 				formData.students.push(studentData)

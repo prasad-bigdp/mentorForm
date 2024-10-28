@@ -7,16 +7,17 @@ const SubmitButton = ({
 	uploadOption,
 	validatedExcel,
 	manualMarks,
+	BatchId,
 }) => {
 	const handleSubmit = async () => {
 		const formData = {
 			AdminId: 9, // Static admin ID
 			ManualReferenceId: "REF16fhthyhy6", // Static reference ID
 			MentorId: 10176767, // Static mentor ID
-			BatchId: selectedBatchId, // Assuming this is the batch ID
+			BatchId: BatchId, // Assuming this is the batch ID
 			DateOfAssessment: new Date().toISOString().split("T")[0], // Replace this with actual date picker value
 			TypeOfAssessment: "MCQ", // Replace with actual assessment type if needed
-			ModuleId:selectedModule,
+			ModuleId: selectedModule,
 			students: [],
 		}
 
@@ -44,6 +45,7 @@ const SubmitButton = ({
 
 		// Perform the API call to submit data
 		try {
+			console.log(formData)
 			const response = await axios.post(
 				"http://49.207.10.13:4017/api/submitAssessmentDetails",
 				formData,

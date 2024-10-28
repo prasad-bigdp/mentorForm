@@ -2,40 +2,56 @@ import axios from "axios"
 
 const SubmitButton = ({
 	selectedModule,
-	manualMarks,
 	selectedTopics,
-	maxMarks,
-	dateOfAssessment,
+	marks,
+	uploadOption,
+	validatedExcel,
+	manualMarks,
 }) => {
 	const handleSubmit = async () => {
-		const payload = {
-			AdminId: 7, // Example
-			ManualReferenceId: "REF166", // Example reference
-			MentorId: 1017, // Example mentor ID
-			BatchId: 2028, // Assuming batch is already selected in the form
-			DateOfAssessment: dateOfAssessment || "2023-10-31", // Format the date appropriately
-			TypeOfAssessment: "MCQ", // Or get this from user input
-			ModuleId: selectedModule, // Pass the selected module ID
-			students: manualMarks.map((student) => {
-				return {
-					StudentId: student.rollNo, // Assuming rollNo is StudentId
-					topics: selectedTopics.map((topic) => ({
-						TopicId: topic.TopicID, // Assuming TopicID is the id
-						MaximumMarks: maxMarks[topic.TopicID] || 100, // Get the max marks for the topic
-						ObtainMarks: student.marks[topic.TopicID] || 0, // Get the student's obtained marks for the topic
-					})),
-				}
-			}),
+		const formData = {
+			AdminId: 7, // Static admin ID
+			ManualReferenceId: "REF166", // Static reference ID
+			MentorId: 1017, // Static mentor ID
+			BatchId: selectedModule, // Assuming this is the batch ID
+			DateOfAssessment: new Date().toISOString().split("T")[0], // Replace this with actual date picker value
+			TypeOfAssessment: "MCQ", // Replace with actual assessment type if needed
+			students: [],
 		}
 
+		// Check if the user uploaded an Excel file or entered marks manually
+		if (uploadOption === "upload") {
+			if (!validatedExcel) {
+				alert("Please upload a valid Excel file before submitting.")
+				return
+			}
+			// Process uploaded Excel data (this part should already be handled elsewhere)
+		} else if (uploadOption === "enter") {
+			// Handle manual entry of marks
+			manualMarks.forEach((student) => {
+				const studentData = {
+					StudentId: student.rollNo,
+					topics: selectedTopics.map((topic) => ({
+						TopicId: topic.TopicID, // Ensure TopicID is available here
+						MaximumMarks: topic.MaxMarks || 100, // Replace with actual max marks if available
+						ObtainMarks: marks[topic.TopicID] || 0, // Fetch obtained marks
+					})),
+				}
+				formData.students.push(studentData)
+			})
+		}
+
+		// Perform the API call to submit data
 		try {
 			const response = await axios.post(
 				"http://49.207.10.13:4017/api/insertUpdateStudentLabMarks",
-				payload,
+				formData,
 			)
 			console.log("Form submitted successfully", response.data)
+			alert("Form submitted successfully!")
 		} catch (error) {
 			console.error("Form submission failed", error)
+			alert("Form submission failed. Please try again.")
 		}
 	}
 

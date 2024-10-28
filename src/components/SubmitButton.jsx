@@ -44,7 +44,7 @@ const SubmitButton = ({
 		// Perform the API call to submit data
 		try {
 			const response = await axios.post(
-				"http://49.207.10.13:4017/api/insertUpdateStudentLabMarks",
+				"http://49.207.10.13:4017/api/submitAssessmentDetails",
 				formData,
 			)
 			console.log("Form submitted successfully", response.data)

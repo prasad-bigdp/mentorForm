@@ -9,28 +9,38 @@ const SubmitButton = ({
 	validatedExcel,
 	manualMarks,
 	BatchId,
+	assessmentDate,
+	typeOfAssessment,
 }) => {
 	const handleSubmit = async () => {
 		const formData = {
 			AdminId: 9, // Static admin ID
 			ManualReferenceId: "REF16fhthyhy6", // Static reference ID
 			MentorId: 10176767, // Static mentor ID
-			BatchId: BatchId, // Assuming this is the batch ID
-			DateOfAssessment: new Date().toISOString().split("T")[0], // Replace this with actual date picker value
-			TypeOfAssessment: "MCQ", // Replace with actual assessment type if needed
+			BatchId: BatchId, // Assuming this is the batch ID from batch selection
+			DateOfAssessment: assessmentDate
+				? assessmentDate
+				: new Date().toISOString().split("T")[0], // Replace this with actual date picker value if available
+			TypeOfAssessment: typeOfAssessment, // Replace with actual assessment type (dynamic)
 			ModuleId: selectedModule,
 			students: [],
 		}
 
 		// Check if the user uploaded an Excel file or entered marks manually
 		if (uploadOption === "upload") {
-			if (!validatedExcel) {
-				alert("Please upload a valid Excel file before submitting.")
-				return
-			}
-			// Process uploaded Excel data (this part should already be handled elsewhere)
+			manualMarks.forEach((student) => {
+				console.log(student.marks)
+				const studentData = {
+					StudentId: student.rollNo,
+					topics: selectedTopics.map((topic) => ({
+						TopicId: topic.TopicID,
+						MaximumMarks: maxMarks[topic.TopicID] || 100,
+						ObtainMarks: student.marks[topic.TopicID] || 0, // Fetch from Excel
+					})),
+				}
+				formData.students.push(studentData)
+			})
 		} else if (uploadOption === "enter") {
-			console.log(marks)
 			// Handle manual entry of marks
 			manualMarks.forEach((student) => {
 				const studentData = {
@@ -38,7 +48,7 @@ const SubmitButton = ({
 					topics: selectedTopics.map((topic) => ({
 						TopicId: topic.TopicID, // Ensure TopicID is available here
 						MaximumMarks: maxMarks[topic.TopicID], // Replace with actual max marks if available
-						ObtainMarks: student.marks[topic.TopicID] || 0, // Fetch obtained marks
+						ObtainMarks: student.marks[topic.TopicID] || 0, // Fetch obtained marks for manual entry
 					})),
 				}
 				formData.students.push(studentData)
@@ -47,7 +57,7 @@ const SubmitButton = ({
 
 		// Perform the API call to submit data
 		try {
-			console.log(formData)
+			console.log("Form data being submitted:", formData) // Debugging
 			const response = await axios.post(
 				"http://49.207.10.13:4017/api/submitAssessmentDetails",
 				formData,
